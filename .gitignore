@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Azure/credentials (extra safety)
+*.publishsettings
+*.azureauth
+*.credentials
+.azure/
+.env
+.env.local
+secrets/
+*.key
+*.pem
+*.pfx
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Node
+node_modules/
+
+# PowerShell history
+history
+ConsoleHost_history.txt

@@ -1,0 +1,13 @@
+// SOC-005 Operational Workbook
+// Dataset: Azure RBAC assignment activity
+
+AzureActivity
+| where TimeGenerated >= ago(24h)
+| where OperationNameValue =~ "Microsoft.Authorization/roleAssignments/write"
+| summarize
+    RBACEvents = count(),
+    SuccessfulEvents = countif(ActivityStatusValue =~ "Success"),
+    FailedEvents = countif(ActivityStatusValue =~ "Failure"),
+    StartedEvents = countif(ActivityStatusValue =~ "Start")
+    by bin(TimeGenerated, 1h)
+| order by TimeGenerated asc

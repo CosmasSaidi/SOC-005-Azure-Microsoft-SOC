@@ -1,0 +1,48 @@
+AzureActivity
+| where TimeGenerated >= ago(7d)
+| where OperationNameValue =~ "Microsoft.Authorization/roleAssignments/write"
+| extend Properties_d = todynamic(Properties)
+| extend
+    RoleDefinitionId = extractjson("$.Properties.RoleDefinitionId", tostring(Properties_d.requestbody), typeof(string)),
+    PrincipalId = extractjson("$.Properties.PrincipalId", tostring(Properties_d.requestbody), typeof(string)),
+    PrincipalType = extractjson("$.Properties.PrincipalType", tostring(Properties_d.requestbody), typeof(string)),
+    Scope = extractjson("$.Properties.Scope", tostring(Properties_d.requestbody), typeof(string))
+| extend RoleId = tostring(split(RoleDefinitionId, "/")[-1])
+| extend AssignedRole = case(
+    RoleId == "8e3af657-a8ff-443c-a75c-2fe8c4bcb635", "Owner",
+    RoleId == "b24988ac-6180-42a0-ab88-20f7382dd24c", "Contributor",
+    RoleId == "acdd72a7-3385-48ef-bd42-f606fba81ae7", "Reader",
+    "Other"
+)
+| extend ScopeRisk = case(
+    Scope matches regex @"^/subscriptions/[^/]+$", "High",
+    Scope contains "/resourceGroups/", "Medium",
+    "Low"
+)
+| extend RoleRisk = case(
+    AssignedRole == "Owner", "High",
+    AssignedRole == "Contributor", "High",
+    AssignedRole == "Reader", "Low",
+    "Medium"
+)
+| extend RiskLevel = case(
+    RoleRisk == "High" and ScopeRisk == "High", "Critical",
+    RoleRisk == "High" or ScopeRisk == "High", "High",
+    RoleRisk == "Medium" or ScopeRisk == "Medium", "Medium",
+    "Low"
+)
+| where RiskLevel in ("High", "Critical")
+| project
+    TimeGenerated,
+    Caller,
+    CallerIpAddress,
+    AssignedRole,
+    RoleRisk,
+    Scope,
+    ScopeRisk,
+    RiskLevel,
+    PrincipalId,
+    PrincipalType,
+    ResourceGroup,
+    CorrelationId
+| order by TimeGenerated desc
